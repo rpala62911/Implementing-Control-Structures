@@ -51,8 +51,8 @@ The validation procedures examine shift staffing, multiple assignments on a sing
 
 Python 3 must be installed and accessible from PowerShell.
 Run the application:
-python EmployeeScheduler.py
-Enter the employee count, each employee's name, and a shift preference for each day. Review the generated weekly schedule and validation results.
+- python EmployeeScheduler.py
+- Enter the employee count, each employee's name, and a shift preference for each day. Review the generated weekly schedule and validation results.
 
 ### Running the Java Program
 
