@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 *.class
 .DS_Store
+screenshots/
+.vscode/
+*.code-workspace

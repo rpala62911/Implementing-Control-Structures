@@ -162,7 +162,6 @@ java EmployeeScheduler < sample-input.txt
 ```
 
 Randomized selection means names and totals can vary between executions.
-Open `Assignment4.code-workspace` to use the supplied light theme. Capture the
-real editor and terminal, including the complete week, workday totals, ranked
-input, and fallback/validation output. Do not use the previous illustrated IDE
-images as screenshots.
+For the report screenshots, use a light editor theme and capture the real editor
+and terminal, including the complete week, workday totals, ranked input, and
+fallback/validation output.
