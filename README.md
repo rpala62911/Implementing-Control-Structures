@@ -20,7 +20,7 @@ The application addresses the following requirements:
 
 - Python: Lists, sets, dictionaries, loops, conditional statements, functions, and randomization.
 - Java: Arrays, ArrayLists, HashSets, methods, loops, conditional statements, if-based input handling, and randomization.
-- Development Environment: Console application; commands work from a terminal in VS Code.
+- Development Environment: Console applications in Python and Java, with an optional Tkinter interface for Python. Commands work from a terminal in VS Code.
 - Version Control: Git and GitHub.
 
 ## Implementation of Control Structures
@@ -72,55 +72,23 @@ The final output includes:
 - A weekly schedule organized by day and shift.
 - Employee names assigned to each shift.
 - Employee working-day totals.
-- Preferred assignment counts, where implemented.
+- Ranked-preference and fallback assignment counts.
 - Scheduling validation messages or an explanation of why a complete schedule could not be generated.
 A successful validation should confirm that every shift has two employees, no employee works multiple shifts on the same day, no employee exceeds five working days, and unavailable days are respected.
 
-## Conclusion
+## Scheduling and Conflict Resolution
 
-The Employee Shift Scheduler demonstrates the practical use of control structures in Python and Java. Both implementations apply conditional logic, iteration, data structures, randomized selection, and validation to manage weekly employee assignments. The project illustrates how similar scheduling requirements can be implemented using the distinct language features of Python and Java while accounting for employee preferences, availability, and workday restrictions.
+The programs first make randomized scheduling attempts while checking employee availability, daily assignments, and the five-day weekly limit. Employees who prefer a shift are considered before employees who listed it as a fallback. If the randomized attempts cannot finish the week, a replacement-chain routine revises earlier assignments before reporting failure. This allows the programs to resolve conflicts without accepting an incomplete or invalid schedule.
 
-## Updates to the original implementation
+Each shift is assigned exactly two employees. This meets the required minimum and also defines when a preferred shift is full. An available employee may be assigned to another shift when the first choice cannot be used, but an unavailable day is never used.
 
-The original program structure is retained: input loops, names, schedule storage,
-randomized attempts, daily and weekly eligibility checks, independent validation,
-and output by day and shift. These changes address the identified gaps:
+## Bonus Ranked Preferences
 
-- Java now shuffles candidates before sorting, avoiding entry-order bias.
-- Both versions prefer fewer assigned workdays when preference ranks tie.
-- Both versions try all 720 orders of each day's six selected employees to choose
-  the smallest total preference-rank penalty.
-- After 100 unsuccessful randomized attempts, a replacement-chain routine revises
-  attendance across days. It can move a fully booked employee only after finding
-  a replacement for their earlier assignment. This removes reliance on random
-  retries for feasibility.
-- Java duplicate names are checked without regard to letter case.
+Employees may enter one shift choice or a complete ranking such as M,E,A. The first code is the employee's first choice, followed by the second and third choices. The final output shows preference totals and lists any fallback assignments. Ranked preferences are supported in both the Python and Java programs.
 
-The assumption is a capacity of exactly two employees per shift. This satisfies
-the specified minimum and defines when a preferred shift is full. Available
-employees can work any shift; preferences are soft, and O is a hard day off.
+## Optional Graphical Interface
 
-## Bonus ranked preferences
-
-Enter a complete ordering such as M,E,A (Morning first, Evening second,
-Afternoon third), a single M/A/E choice, or O. A full ranking must contain each
-shift exactly once. For a single choice, both unlisted shifts tie as fallbacks;
-the application does not invent a second preference.
-
-Every assigned fallback is listed with employee name, day, requested shift, and
-assigned shift. Rank totals follow the listing. Staffing and work limits always
-take priority. Ranks are optimized for each day's chosen six employees; the
-application does not claim a globally optimal weekly preference score.
-
-This implements the optional ranked-preference feature in both languages.
-
-## Optional graphical interface
-
-The Python version also includes a Tkinter interface for both input and output.
-It collects employee names and seven daily ranked preferences in a scrollable
-form, validates names and selections, and displays the final week in a schedule
-table with workday totals, preference ranks, fallbacks, and validation status.
-The original console program remains available and unchanged in how it is run.
+The Python version includes a Tkinter interface for input and output. It collects employee names and seven daily preferences, checks the entries, and displays the final schedule in a weekly table. It also displays workday totals, preference results, fallback assignments, and the validation result. The console programs remain available for demonstrating control structures in both languages.
 
 ```sh
 python EmployeeSchedulerGUI.py
@@ -136,7 +104,7 @@ To open the interface already filled with sample data and a generated schedule:
 python EmployeeSchedulerGUI.py --demo
 ```
 
-## Automated checks
+## Automated Checks
 
 ```sh
 python test_scheduler.py
@@ -146,22 +114,19 @@ javac EmployeeScheduler.java EmployeeSchedulerTest.java
 java EmployeeSchedulerTest
 ```
 
-The tests cover identical first choices, varied unavailable days, impossible
-weekly capacity, malformed rankings, and validation of deliberately broken output.
-The repair tests compare 120 generated cases per language with an independent
-capacity calculation over all subsets of the seven days.
+The tests cover repeated first choices, unavailable days, insufficient weekly capacity, invalid rankings, duplicate names, and validation of an intentionally incorrect schedule.
 
 ## Reproducing output for the report
 
-`sample-input.txt` contains nine fictional employees, all requesting Morning first,
-with different second choices. Run interactively or redirect this file:
+`sample-input.txt` contains nine fictional employees with ranked shift preferences. Run either console application interactively or redirect the sample input:
 
 ```sh
 python EmployeeScheduler.py < sample-input.txt
 java EmployeeScheduler < sample-input.txt
 ```
 
-Randomized selection means names and totals can vary between executions.
-For the report screenshots, use a light editor theme and capture the real editor
-and terminal, including the complete week, workday totals, ranked input, and
-fallback/validation output.
+Randomized selection means the assignments can vary between executions. The final output still follows the same staffing, availability, and weekly-limit rules.
+
+## Conclusion
+
+The Employee Shift Scheduler demonstrates the practical use of control structures in Python and Java. Both implementations use conditional logic, loops, collections, randomized selection, conflict resolution, and validation to manage employee assignments. The ranked-preference option and Python graphical interface extend the original console programs while keeping the required scheduling rules.
