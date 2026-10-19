@@ -129,4 +129,4 @@ Randomized selection means the assignments can vary between executions. The fina
 
 ## Conclusion
 
-The Employee Shift Scheduler demonstrates the practical use of control structures in Python and Java. Both implementations use conditional logic, loops, collections, randomized selection, conflict resolution, and validation to manage employee assignments. The ranked-preference option and Python graphical interface extend the original console programs while keeping the required scheduling rules.
+The Employee Shift Scheduler demonstrates the practical use of control structures in Python and Java. Both programs use conditional statements, loops, collections, random selection, conflict resolution, and validation to create the weekly schedule. As a bonus, employees can rank their shift choices in both programs. The Python version also includes a GUI for entering employee information and viewing the completed schedule.
