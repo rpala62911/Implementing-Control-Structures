@@ -9,6 +9,7 @@ Validating the completed schedule and displaying employee workday totals, prefer
 
 # Importing Library
 import random
+from itertools import permutations
 
 DAYS = [
     "Monday", "Tuesday", "Wednesday", "Thursday",
@@ -21,12 +22,82 @@ MAX_WORK_DAYS = 5
 UNAVAILABLE = -1
 
 
+def parse_preference(value):
+    """Accept a single choice, a full ranking such as M,E,A, or O."""
+    codes = value.strip().upper().replace(" ", "").split(",")
+    if codes == ["O"]:
+        return UNAVAILABLE
+    choices = {"M": 0, "A": 1, "E": 2}
+    if len(codes) not in (1, 3) or len(set(codes)) != len(codes):
+        raise ValueError("Enter one shift, all three ranked shifts, or O.")
+    if any(code not in choices for code in codes):
+        raise ValueError("Use M, A, E, or O.")
+    return [choices[code] for code in codes]
+
+
+def preference_rank(preference, shift):
+    # Unlisted shifts tie as fallback choices after a single first preference.
+    return preference.index(shift) if shift in preference else 1
+
+
+def best_daily_shifts(employees, day, preferences):
+    """Try the 720 possible orders for six employees, keeping the best ranks."""
+    best = None
+    best_score = None
+    for order in permutations(employees):
+        score = sum(preference_rank(preferences[e][day], i // 2)
+                    for i, e in enumerate(order))
+        if best_score is None or score < best_score:
+            best_score = score
+            best = [list(order[i:i + 2]) for i in range(0, 6, 2)]
+    return best
+
+
+def repair_schedule(preferences):
+    """Find feasible attendance by moving assignments along replacement chains."""
+    attendance = [set() for _ in DAYS]
+    worked = [set() for _ in preferences]
+
+    def fill_day(day, visited_days, visited_employees):
+        visited_days.add(day)
+        candidates = [e for e in range(len(preferences))
+                      if preferences[e][day] != UNAVAILABLE
+                      and e not in attendance[day]]
+        random.shuffle(candidates)
+        candidates.sort(key=lambda e: len(worked[e]))
+        for employee in candidates:
+            if employee in visited_employees:
+                continue
+            visited_employees.add(employee)
+            if len(worked[employee]) < MAX_WORK_DAYS:
+                attendance[day].add(employee)
+                worked[employee].add(day)
+                return True
+            # Replace an earlier assignment before moving this employee here.
+            for previous_day in sorted(worked[employee]):
+                if previous_day not in visited_days and fill_day(
+                        previous_day, visited_days, visited_employees):
+                    attendance[previous_day].remove(employee)
+                    worked[employee].remove(previous_day)
+                    attendance[day].add(employee)
+                    worked[employee].add(day)
+                    return True
+        return False
+
+    for day in range(len(DAYS)):
+        while len(attendance[day]) < 6:
+            if not fill_day(day, set(), set()):
+                return None
+    return [best_daily_shifts(list(attendance[d]), d, preferences)
+            for d in range(len(DAYS))]
+
+
 def create_schedule(preferences):
     # Preparing employee counts and schedule information
     employee_count = len(preferences)
 
     # Repeating randomized attempts to generate a complete schedule
-    for attempt in range(2000):
+    for attempt in range(100):
         schedule = [[[] for _ in SHIFTS] for _ in DAYS]
         work_days = [0] * employee_count
         day_order = list(range(len(DAYS)))
@@ -54,7 +125,8 @@ def create_schedule(preferences):
                     random.shuffle(candidates)
                     candidates.sort(
                         key=lambda employee:
-                        preferences[employee][day] != shift
+                        (preference_rank(preferences[employee][day], shift),
+                         work_days[employee])
                     )
 
                     # Checking candidate availability before assigning shifts
@@ -78,10 +150,13 @@ def create_schedule(preferences):
 
         # Returning the schedule after successfully filling every shift
         if success:
+            for day in range(len(DAYS)):
+                employees = [e for shift in schedule[day] for e in shift]
+                schedule[day] = best_daily_shifts(employees, day, preferences)
             return schedule
 
-    # Returning no schedule after exhausting all randomized attempts
-    return None
+    # Repair conflicts across days if the randomized attempts did not succeed.
+    return repair_schedule(preferences)
 
 
 def validate_schedule(schedule, preferences):
@@ -136,7 +211,9 @@ def main():
     # Displaying application instructions and scheduling rules
     print("EMPLOYEE SHIFT SCHEDULER")
     print("M = Morning, A = Afternoon, E = Evening, O = Unavailable")
-    print("Each shift requires two employees.")
+    print("Bonus: enter all three shifts in priority order, e.g. M,E,A.")
+    print("Single choices are allowed; other shifts tie as fallbacks.")
+    print("Each shift has capacity two (the required minimum).")
     print("Each employee can work at most five days per week.\n")
 
     # Collecting and validating the total employee count
@@ -152,7 +229,6 @@ def main():
     # Initializing employee names, preferences, and shift-choice mappings
     names = []
     preferences = []
-    choices = {"M": 0, "A": 1, "E": 2, "O": UNAVAILABLE}
 
     # Collecting unique employee names and daily shift preferences
     for employee in range(total):
@@ -176,15 +252,15 @@ def main():
         for day in DAYS:
             while True:
                 choice = input(
-                    f"{name}, {day} [M/A/E/O]: "
+                    f"{name}, {day} [M/A/E, ranked M,E,A, or O]: "
                 ).strip().upper()
 
                 # Recording valid shift preferences or unavailability
-                if choice in choices:
-                    daily_preferences.append(choices[choice])
+                try:
+                    daily_preferences.append(parse_preference(choice))
                     break
-
-                print("Invalid choice. Enter M, A, E, or O.")
+                except ValueError as error:
+                    print(error)
 
         preferences.append(daily_preferences)
 
@@ -227,7 +303,7 @@ def main():
 
     # Counting assignments matching employee shift preferences
     preferred = sum(
-        preferences[employee][day] == shift
+        preferences[employee][day][0] == shift
         for day in range(len(DAYS))
         for shift in range(len(SHIFTS))
         for employee in schedule[day][shift]
@@ -238,6 +314,21 @@ def main():
 
     # Displaying preference-matching assignment statistics
     print(f"\nPreferred assignments: {preferred}/{total_assignments}")
+
+    print("\nRANKED PREFERENCE AND CONFLICT SUMMARY")
+    ranks = [0, 0, 0]
+    for day in range(len(DAYS)):
+        for shift in range(len(SHIFTS)):
+            for employee in schedule[day][shift]:
+                rank = preference_rank(preferences[employee][day], shift)
+                ranks[rank] += 1
+                if rank:
+                    print(f"  {names[employee]}, {DAYS[day]}: "
+                          f"{SHIFTS[preferences[employee][day][0]]} requested -> "
+                          f"{SHIFTS[shift]} assigned (fallback rank {rank + 1})")
+    print(f"Rank 1: {ranks[0]} | Rank 2/fallback: {ranks[1]} | Rank 3: {ranks[2]}")
+    print("Ranks are improved for each day's selected employees; "
+          "global optimality is not claimed.")
 
     # Displaying final schedule validation results
     print("\nSCHEDULING VALIDATION")
